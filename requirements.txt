@@ -1,0 +1,7 @@
+numpy
+torch
+scikit-learn
+sentence-transformers
+openai
+scipy
+scikit-learn-intelex
