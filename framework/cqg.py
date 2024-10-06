@@ -37,7 +37,7 @@ class Step(Enum):
 
     
 class ContrastiveQuestionGeneration:
-    def format_prompt(positive_chunks, negative_chunks):
+    def format_prompt(self,positive_chunks, negative_chunks):
         txt = '''Generate 10 simple yet insightful yes/no questions that determine properties of an article, where for all questions, the answer will be "yes" for ALL the positive articles and "no" for ALL the negative articles. Keep questions concise and avoid using complex sentence structures with "and" or "or" unless necessary.
 
 **Positive Articles:** 
@@ -113,8 +113,8 @@ class ContrastiveQuestionGeneration:
         corpus = self.corpus
         lock_file = os.path.join(self.temp_folder, "lock")
         if os.path.exists(lock_file):
-            logger.info(f"Lock file {lock_file} exists, check if there is a process running... ")
-            return
+            logger.error(f"Lock file {lock_file} exists, check if there is a process running... ")
+            raise Exception(f"Lock file {lock_file} exists, check if there is a process running... ")
         with open(lock_file, "w") as f:
             f.write("locked")
         
@@ -155,7 +155,7 @@ class ContrastiveQuestionGeneration:
         
         cluster_assignments = kmeans.predict(corpus_embeddings)
         with open(os.path.join(self.temp_folder, "cluster_assignments.json"), "w") as f:
-            json.dump(list(cluster_assignments), f)
+            json.dump(list([int(i) for i in cluster_assignments]), f)
             
         cluster_centers = []
         
@@ -260,8 +260,9 @@ class ContrastiveQuestionGeneration:
             for i in range(0, len(batch_questions_generation_jsons), MAX_BATCH_SIZE):
                 batch = batch_questions_generation_jsons[i:i+MAX_BATCH_SIZE]
                 with open(os.path.join(self.temp_folder, f"batch_questions_generation_jsons_{i}.json"), "w") as f:
-                    json.dump(batch, f)
-                    f.write("\n")
+                    for req in batch:
+                        json.dump(req, f)
+                        f.write("\n")
             
             self._log_progress(Step.BATCH_JSON_CREATED.value)
             logger.info(f"Questions generation requests prepared")
@@ -413,8 +414,9 @@ class ContrastiveQuestionGeneration:
             for i in range(0, len(batch_jsons_initial_filtering), MAX_BATCH_SIZE):
                 batch = batch_jsons_initial_filtering[i:i+MAX_BATCH_SIZE]
                 with open(os.path.join(self.temp_folder, f"batch_jsons_initial_filtering_{i}.json"), "w") as f:
-                    json.dump(batch, f)
-                    f.write("\n")
+                    for req in batch:
+                        json.dump(req, f)
+                        f.write("\n")
             
             self._log_progress(Step.PROBE_BATCH_JSON_CREATED.value)
             logger.info(f"Probe batch json created")
@@ -462,7 +464,7 @@ class ContrastiveQuestionGeneration:
             logger.info(f"Results already retrieved")
             
         # 5.5 parse the results
-        if self._get_progress() < Step.PROBE_RESULTS_PARSED.value:
+        if self._get_progress() < Step.PROBE_QUESTIONS_EXTRACTED.value:
             logger.info(f"Parsing the results...")
             initial_filtering_responses = {}
             
@@ -475,13 +477,11 @@ class ContrastiveQuestionGeneration:
                         response = json.loads(line)
                         custom_id = response["custom_id"]
                         i, j, label = custom_id.split("_")
-                        i = int(i)
-                        j = int(j)
 
                         if i not in initial_filtering_responses:
                             initial_filtering_responses[i] = {
-                                "positives": [],
-                                "negatives": []
+                                "positives": {},
+                                "negatives": {}
                             }
                             
                         if label == "positive":
@@ -492,13 +492,13 @@ class ContrastiveQuestionGeneration:
             with open(os.path.join(self.temp_folder, "initial_filtering_responses.json"), "w") as f:
                 json.dump(initial_filtering_responses, f)
             
-            self._log_progress(Step.PROBE_RESULTS_PARSED.value)
+            self._log_progress(Step.PROBE_QUESTIONS_EXTRACTED.value)
             logger.info(f"Results parsed")
         
         else:
             with open(os.path.join(self.temp_folder, "initial_filtering_responses.json"), "r") as f:
                 initial_filtering_responses = json.load(f)
-            
+
         # 6. pick the best questions
         if self._get_progress() < Step.QUESTIONS_PICKED.value:
             logger.info(f"Picking the best questions...")
@@ -508,8 +508,8 @@ class ContrastiveQuestionGeneration:
             for i in range(len(initial_filtering_responses)):
                 questions_results = {}
                 
-                for j in range(len(initial_filtering_responses[i]["positives"])):
-                    qas = initial_filtering_responses[i]["positives"][j]
+                for j in initial_filtering_responses[str(i)]["positives"]:
+                    qas = initial_filtering_responses[str(i)]["positives"][str(j)]
                     for k in range(len(qas)):
                         if k not in questions_results:
                             questions_results[k] = {
@@ -523,8 +523,8 @@ class ContrastiveQuestionGeneration:
                         else:
                             questions_results[k]["no_in_positives"] += 1
                             
-                for j in range(len(initial_filtering_responses[i]["negatives"])):
-                    qas = initial_filtering_responses[i]["negatives"][j]
+                for j in initial_filtering_responses[str(i)]["negatives"]:
+                    qas = initial_filtering_responses[str(i)]["negatives"][str(j)]
                     for k in range(len(qas)):
                         if k not in questions_results:
                             logger.warning(f"Question {k} not found in questions_results. This should not happen. This could due to the parsing error. Please raise an issue.")
@@ -547,28 +547,32 @@ class ContrastiveQuestionGeneration:
                     question_scores.append((k, score))
                     
                 question_scores.sort(key=lambda x: -x[1])
-                all_question_scores[i] = question_scores
-                picked_questions[i] = []
+                all_question_scores[str(i)] = question_scores
+                picked_questions[str(i)] = []
                 encoded_picked_questions = []
                 for k, _ in question_scores:
-                    emb_q = self.encoder_model.encode([questions[str(i)][k]], normalize_embedding=True)[0]
+                    
+                    emb_q = self.encoder_model.encode([questions[str(i)][k]], show_progress_bar=False)[0]
+                    emb_q_norm = np.linalg.norm(emb_q)
+                    emb_q = emb_q / emb_q_norm
                     is_good = True
                     for q in range(len(encoded_picked_questions)):
-                        if np.dot(emb_q, encoded_picked_questions[q]) > 0.8:
+                        if np.dot(emb_q, encoded_picked_questions[q]) > self.theta:
                             is_good = False
+                            logger.info(f"Question {k} is not good, question: {questions[str(i)][k]}")
                             break
                     if is_good:
                         encoded_picked_questions.append(emb_q)
-                        picked_questions[i].append(k)
-                    if len(picked_questions[i]) == self.t:
+                        picked_questions[str(i)].append(k)
+                    if len(picked_questions[str(i)]) == self.t:
                         break
                 
-                if len(picked_questions[i]) < self.t:
+                if len(picked_questions[str(i)]) < self.t:
                     # add more questions
-                    num_to_add = self.t - len(picked_questions[i])
+                    num_to_add = self.t - len(picked_questions[str(i)])
                     for k, _ in question_scores:
-                        if k not in picked_questions[i]:
-                            picked_questions[i].append(k)
+                        if k not in picked_questions[str(i)]:
+                            picked_questions[str(i)].append(k)
                             num_to_add -= 1
                         if num_to_add == 0:
                             break
@@ -590,15 +594,18 @@ class ContrastiveQuestionGeneration:
             deduped_questions = {}
             picked_encoded_questions = []
             
-            for i in range(len(picked_questions[0])):
+            for i in range(self.t):
+                logger.info(f"Generating the final questions round {i}...")
                 clusters_ids = list(range(len(picked_questions)))
                 # randomly permute the cluster ids
                 random.shuffle(clusters_ids)
                 for j in clusters_ids:
-                    if j not in deduped_questions:
-                        deduped_questions[j] = []
-                    question_text = questions[str(j)][picked_questions[j][i]]
-                    emb_q = self.encoder_model.encode([question_text], normalize_embedding=True)[0]
+                    if str(j) not in deduped_questions:
+                        deduped_questions[str(j)] = []
+                    question_text = questions[str(j)][picked_questions[str(j)][i]]
+                    emb_q = self.encoder_model.encode([question_text], show_progress_bar=False)[0]
+                    emb_q_norm = np.linalg.norm(emb_q)
+                    emb_q = emb_q / emb_q_norm
                     is_good = True
                     for q in range(len(picked_encoded_questions)):
                         if np.dot(emb_q, picked_encoded_questions[q]) > self.theta:
@@ -606,7 +613,7 @@ class ContrastiveQuestionGeneration:
                             break
                     if is_good:
                         picked_encoded_questions.append(emb_q)
-                        deduped_questions[j].append(picked_questions[j][i])
+                        deduped_questions[str(j)].append(picked_questions[str(j)][i])
                         
             total_deduped_questions = 0
 
@@ -617,7 +624,9 @@ class ContrastiveQuestionGeneration:
             with open(os.path.join(self.temp_folder, "deduped_questions.json"), "w") as f:
                 json.dump(deduped_questions, f)
 
+            self._log_progress(Step.FINAL_QUESTIONS_GENERATED.value)
+            logger.info(f"Final questions generated")
         # remove lock
-        os.remove(os.path.join(self.temp_folder, "lock.txt"))
+        os.remove(os.path.join(self.temp_folder, "lock"))
     
     

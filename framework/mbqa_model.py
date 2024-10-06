@@ -23,10 +23,15 @@ class MultiTaskClassifier(nn.Module):
             logits = [self.classifiers[task_id](embeddings).squeeze(-1) for task_id in task_ids]
         else:
             logits = [classifier(embeddings) for classifier in self.classifiers]
-        return torch.cat(logits, dim=-1).squeeze(-1)
+        # Ensure all tensors in logits have at least one dimension
+        logits = [l.unsqueeze(-1) if l.dim() == 0 else l for l in logits]
+        logits = torch.cat(logits, dim=-1)
+        logits = logits.squeeze(-1)
+        # print(logits.shape)
+        return logits
 
 class MBQAMTEBModelWrapper():
-    def sigmoid(z):
+    def sigmoid(self, z):
         return 1/(1 + np.exp(-z))   
     
     def __init__(self, model, questions, is_binary=False, binary_threshold=0.5, is_sparse=False, use_sigmoid=False):

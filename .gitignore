@@ -2,3 +2,4 @@ temp/
 output/
 __pycache__/
 data/medi2_documents.json
+results_mteb/

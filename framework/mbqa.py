@@ -53,10 +53,10 @@ class MBQA:
         self.temp_folder = os.path.join(self.temp_folder, self.name)
         self.output_folder = os.path.join(self.output_folder, self.name)
         
-        self.LLM = kwargs.get("LLM", "GPT-4o-mini")
+        self.LLM = kwargs.get("LLM", "gpt-4o-mini")
         self.openai_api_key = kwargs.get("openai_api_key", None)
         self.client = OpenAIWrapper(API_KEY=self.openai_api_key).client
-        self.device = kwargs.get("device", "cpu")
+        self.device = kwargs.get("device", "cuda")
         self.backbone = kwargs.get("backbone", "WhereIsAI/UAE-Large-V1")
         self.learning_rate = kwargs.get("learning_rate", 1e-4)
         self.num_steps = kwargs.get("num_steps", 3000000)
@@ -85,8 +85,10 @@ class MBQA:
         with open(os.path.join(self.temp_folder, "cluster_distances.npy"), "rb") as f:
             cluster_distances = np.load(f)
         
+        logger.info(f"Start collecting training data...")
+        
         # 1. Sample questions from each cluster and pack them into multiple of 20 to save cost
-        if self._get_progress() == StepMBQA.REQUEST_JSON_CREATED.value:
+        if self._get_progress() < StepMBQA.REQUEST_JSON_CREATED.value:
             logger.info("Sampling questions from each cluster... ")
             linear_questions = []
             original_questions_id = []
@@ -97,9 +99,9 @@ class MBQA:
             docs_frequency = {}
 
             for i in range(len(deduped_questions)):
-                if i not in deduped_questions:
+                if str(i) not in deduped_questions:
                     continue
-                picked_questions_cluster = deduped_questions[i]
+                picked_questions_cluster = deduped_questions[str(i)]
                 generated_questions_cluster = questions[str(i)]
                 picked_questions_cluster_text = [generated_questions_cluster[q] for q in picked_questions_cluster]
                 
@@ -108,7 +110,7 @@ class MBQA:
                     cluster_indices = random.sample(list(cluster_indices), 100)
                 else:
                     cluster_indices = list(cluster_indices)
-                selected_docs_in_clusters[i] = cluster_indices
+                selected_docs_in_clusters[str(i)] = cluster_indices
                 for j in range(len(picked_questions_cluster)):
                     linear_questions.append(picked_questions_cluster_text[j])
                     original_questions_id.append((i, picked_questions_cluster[j]))
@@ -129,7 +131,7 @@ class MBQA:
             for q_id in range(len(original_questions_id)):
                 i = original_questions_id[q_id][0]
                 
-                cluster_indices = selected_docs_in_clusters[i]
+                cluster_indices = selected_docs_in_clusters[str(i)]
                 
                 # get nearest 5 clusters of this cluster
                 closest_clusters_of_i = closest_clusters_top5[i]
@@ -138,7 +140,7 @@ class MBQA:
                     selected_hard_negatives[q_id] = []
                 
                 for j in range(len(closest_clusters_of_i)):
-                    for k in selected_docs_in_clusters[closest_clusters_of_i[j]]:
+                    for k in selected_docs_in_clusters[str(closest_clusters_of_i[j])]:
                         selected_hard_negatives[q_id].append(k)
                         if k not in docs_frequency:
                             docs_frequency[k] = 0
@@ -223,7 +225,7 @@ class MBQA:
             with open(os.path.join(self.temp_folder, "docs_to_question_ids.json"), "w") as f:
                 json.dump(docs_to_question_ids_int, f)
                 
-            with open(os.path.join(self.temp_folder, "linear_questions.json"), "w") as f:
+            with open(os.path.join(self.output_folder, "linear_questions.json"), "w") as f:
                 json.dump(linear_questions, f)
             
             with open(os.path.join(self.temp_folder, "original_questions_id.json"), "w") as f:
@@ -261,8 +263,9 @@ class MBQA:
             for i in range(0, len(batch_jsons_get_training_data), MAX_BATCH_SIZE):
                 batch = batch_jsons_get_training_data[i:i+MAX_BATCH_SIZE]
                 with open(os.path.join(self.temp_folder, f"batch_jsons_get_training_data_{i}.json"), "w") as f:
-                    json.dump(batch, f)
-                    f.write("\n")
+                    for req in batch:
+                        json.dump(req, f)
+                        f.write("\n")
             
             self._log_progress(StepMBQA.REQUEST_JSON_CREATED.value)
             logger.info(f"Requests to get training data prepared")
@@ -275,6 +278,7 @@ class MBQA:
             
             json_files = os.listdir(self.temp_folder)
             json_files = [f for f in json_files if f.startswith("batch_jsons_get_training_data_")]
+            json_files = [os.path.join(self.temp_folder, f) for f in json_files]
             
             call_batch_api(self.client, json_files, os.path.join(self.temp_folder, "batch_ids_get_training_data.json"))
 
@@ -298,10 +302,13 @@ class MBQA:
             
             batch_ids = json.load(open(os.path.join(self.temp_folder, "batch_ids_get_training_data.json"), "r"))
             
-            batch_results = self.client.batches.retrieve(batch_ids)
-            
-            with open(os.path.join(self.temp_folder, "batch_results_get_training_data.json"), "w") as f:
-                json.dump(batch_results, f)
+            for batch_id in batch_ids:
+                batch = self.client.batches.retrieve(batch_id)
+                batch_output_file_id = batch.output_file_id
+                
+                with open(os.path.join(self.temp_folder, f"batch_results_get_training_data_{batch_id}.json"), "wb") as f:
+                    f.write(self.client.files.content(batch_output_file_id).content)
+                    
                 
             self._log_progress(StepMBQA.RESULTS_RETRIEVED.value)
             logger.info(f"Results retrieved")
@@ -329,7 +336,7 @@ class MBQA:
                     response = json.loads(line)
                     custom_id = response["custom_id"]
                     doc_index, start_ind = custom_id.split("_")
-                    doc_index = int(doc_index)
+                    # doc_index = int(doc_index)
                     start_ind = int(start_ind)
                     req_answers = parse_response(response["response"]["body"]["choices"][0]["message"]["content"])
                     if len(req_answers) + start_ind > len(docs_to_question_ids[doc_index]):
@@ -347,8 +354,11 @@ class MBQA:
                 
             self._log_progress(StepMBQA.FINAL_QUESTIONS_ARTICLE_PAIRS_GENERATED.value)
             logger.info(f"Final questions article pairs generated")
-                
+        
+        logger.info(f"Finished collecting training data")
+        
     def train_model(self):
+        logger.info(f"Start training model...")
         with open(os.path.join(self.output_folder, "training_data.json"), "r") as f:
             training_data = json.load(f)
         
@@ -365,8 +375,8 @@ class MBQA:
             for q_id in task_ids:
                 task_labels.append(training_data[doc_id][q_id])
                 
-            training_texts.append(self.corpus[doc_id])
-            training_task_ids.append(task_ids)
+            training_texts.append(self.corpus[int(doc_id)])
+            training_task_ids.append([int(q_id) for q_id in task_ids])
             training_labels.append(task_labels)
 
 
@@ -406,6 +416,7 @@ class MBQA:
         loss_fn = torch.nn.BCEWithLogitsLoss(reduction='mean', pos_weight=weight)
         val_data_loader = DataLoader(val_dataset, batch_size=1, shuffle=True)
         
+        logger.info(f"Model training in progress...")
         num_steps = 0
         while True:
             if num_steps >= self.num_steps:
@@ -422,13 +433,18 @@ class MBQA:
                 labels = labels.to(self.device)
 
                 optimizer.zero_grad()
-                if len(task_ids) == 0:
+                if len(task_ids) < 2:
                     continue
-                logits = model(text, task_ids=task_ids)
+                logits = model([text], task_ids=task_ids)
 
                 # Calculate loss only for the active tasks
                 loss = 0
-
+                # print(logits.shape)
+                # print(labels.shape)
+                if logits.shape != labels.shape:
+                    print("warning: logits shape is not equal to labels shape")
+                    print(logits.shape, labels.shape)
+                    continue
                 loss = loss_fn(logits, labels)
                 loss.backward()
                 optimizer.step()
@@ -462,7 +478,7 @@ class MBQA:
             gt_labels = np.concatenate(gt_labels, axis=0)
 
             logger.info(classification_report(gt_labels, pred_labels > 0))
-        
+            
         torch.save(model.state_dict(), os.path.join(self.output_folder, f"new_multi_task_classifier_uae_{num_steps}.pt"))    
         
             
