@@ -21,7 +21,6 @@ if __name__ == "__main__":
         temp_folder="./temp",
         output_folder="./output",
         name="MEDI2",
-        k=100,
     )
     cqg.generate_questions()
     
