@@ -1,6 +1,5 @@
 from cqg import ContrastiveQuestionGeneration
 from mbqa import MBQA
-import subprocess
 import json
 import logging
 import os

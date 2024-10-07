@@ -225,7 +225,7 @@ class MBQA:
             with open(os.path.join(self.temp_folder, "docs_to_question_ids.json"), "w") as f:
                 json.dump(docs_to_question_ids_int, f)
                 
-            with open(os.path.join(self.output_folder, "linear_questions.json"), "w") as f:
+            with open(os.path.join(self.output_folder, "questions.json"), "w") as f:
                 json.dump(linear_questions, f)
             
             with open(os.path.join(self.temp_folder, "original_questions_id.json"), "w") as f:
@@ -320,7 +320,7 @@ class MBQA:
             with open(os.path.join(self.temp_folder, "docs_to_question_ids.json"), "r") as f:
                 docs_to_question_ids = json.load(f)
                 
-            with open(os.path.join(self.output_folder, "linear_questions.json"), "r") as f:
+            with open(os.path.join(self.output_folder, "questions.json"), "r") as f:
                 linear_questions = json.load(f)
                 
             with open(os.path.join(self.temp_folder, "original_questions_id.json"), "r") as f:
@@ -349,7 +349,7 @@ class MBQA:
                     for i in range(len(req_answers)):
                         training_data[doc_index][docs_to_question_ids[doc_index][start_ind + i]] = req_answers[i]
                 
-            with open(os.path.join(self.output_folder, "training_data.json"), "w") as f:
+            with open(os.path.join(self.temp_folder, "training_data.json"), "w") as f:
                 json.dump(training_data, f)
                 
             self._log_progress(StepMBQA.FINAL_QUESTIONS_ARTICLE_PAIRS_GENERATED.value)
@@ -359,10 +359,10 @@ class MBQA:
         
     def train_model(self):
         logger.info(f"Start training model...")
-        with open(os.path.join(self.output_folder, "training_data.json"), "r") as f:
+        with open(os.path.join(self.temp_folder, "training_data.json"), "r") as f:
             training_data = json.load(f)
         
-        with open(os.path.join(self.output_folder, "linear_questions.json"), "r") as f:
+        with open(os.path.join(self.output_folder, "questions.json"), "r") as f:
             linear_questions = json.load(f)
         
         training_texts = []
@@ -479,7 +479,7 @@ class MBQA:
 
             logger.info(classification_report(gt_labels, pred_labels > 0))
             
-        torch.save(model.state_dict(), os.path.join(self.output_folder, f"new_multi_task_classifier_uae_{num_steps}.pt"))    
+        torch.save(model.state_dict(), os.path.join(self.output_folder, f"mbqa_model.pt"))    
         
             
         

@@ -76,7 +76,7 @@ class ContrastiveQuestionGeneration:
         self.theta = kwargs.get("theta", 0.8)
         self.t = kwargs.get("t", 4)
         self.temp_folder = kwargs.get("temp_folder", "./temp")
-        self.output_folder = kwargs.get("output_folder", "./output")
+        # self.output_folder = kwargs.get("output_folder", "./output")
         self.seed = kwargs.get("seed", 42)
         self.openai_api_key = kwargs.get("openai_api_key", None)
         self.device = kwargs.get("device", "cuda")
@@ -87,9 +87,9 @@ class ContrastiveQuestionGeneration:
             # random name
             self.name = "".join(random.choices(string.ascii_letters + string.digits, k=8))
         self.temp_folder = os.path.join(self.temp_folder, self.name)
-        self.output_folder = os.path.join(self.output_folder, self.name)
+        # self.output_folder = os.path.join(self.output_folder, self.name)
         os.makedirs(self.temp_folder, exist_ok=True)
-        os.makedirs(self.output_folder, exist_ok=True)
+        # os.makedirs(self.output_folder, exist_ok=True)
         self.encoder_model = SentenceTransformer(self.encoder, device="cpu")
         if self.device is not None:
             self.encoder_model.to(self.device)
