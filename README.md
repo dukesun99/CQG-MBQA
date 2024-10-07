@@ -1,4 +1,4 @@
-# CQG-MBQA
+# CQG-MBQA: A General Framework for Producing Interpretable Semantic Text Embeddings
 Welcome to the repository for our paper "A General Framework for Producing Interpretable Semantic Text Embeddings" (Under Review). 
 
 Key Features:
