@@ -92,7 +92,7 @@ random.seed(42)
 selected_corpus = set(gt_docs)  # Start with all ground truth documents
 
 # Calculate how many additional documents we need to reach 1% of the corpus
-target_size = int(len(corpus))
+target_size = int(len(corpus) * 1.0) # Change this to test a subset only
 additional_docs_needed = max(0, target_size - len(selected_corpus))
 
 # Randomly select additional documents from the corpus
