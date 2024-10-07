@@ -108,11 +108,14 @@ class BagOfTokenEncoder:
     def __init__(self, tokenizer="bert-base-uncased"):
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         
-    def encode(self, sentences: list[str], **kwargs) -> np.ndarray:
+    def encode(self, sentences, **kwargs):
         input_ids = self.tokenizer(sentences, add_special_tokens=False, padding=False, truncation=True, return_tensors="np")['input_ids']
         total_dims = self.tokenizer.vocab_size
-        output = np.zeros((len(sentences), total_dims))
+        output = np.zeros((len(sentences), total_dims), dtype=np.float32)
         for i in range(len(sentences)):
-            unique, counts = np.unique(input_ids[i], return_counts=True)
-            output[i, unique] = counts
+            # Ensure input_ids are integers
+            unique, counts = np.unique(input_ids[i].astype(np.int32), return_counts=True)
+            # Ensure unique indices are within bounds
+            valid_indices = unique < total_dims
+            output[i, unique[valid_indices]] = counts[valid_indices]
         return output

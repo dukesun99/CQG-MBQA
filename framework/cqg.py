@@ -37,7 +37,7 @@ class Step(Enum):
 
     
 class ContrastiveQuestionGeneration:
-    def format_prompt(self,positive_chunks, negative_chunks):
+    def format_prompt(self, positive_chunks, negative_chunks):
         txt = '''Generate 10 simple yet insightful yes/no questions that determine properties of an article, where for all questions, the answer will be "yes" for ALL the positive articles and "no" for ALL the negative articles. Keep questions concise and avoid using complex sentence structures with "and" or "or" unless necessary.
 
 **Positive Articles:** 

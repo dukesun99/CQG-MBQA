@@ -29,5 +29,5 @@ if __name__ == "__main__":
         output_folder="./output",
         name="MEDI2",
     )
-    mbqa.collect_training_data()
+    mbqa.collect_training_data_with_cqg()
     mbqa.train_model()

@@ -48,5 +48,4 @@ model.to("cuda")
 
 mteb_model = MBQAMTEBModelWrapper(model, linear_questions, is_binary=True, is_sparse=False, binary_threshold=0.5, use_sigmoid=True)
 
-
-results = evaluation.run(mteb_model, output_folder=os.path.join(dirname, "../results_mteb"))
+results = evaluation.run(mteb_model, output_folder=os.path.join(dirname, "../results_mteb_cqg"))

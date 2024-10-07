@@ -114,7 +114,7 @@ if __name__ == "__main__":
         output_folder="./output",
         name="DatasetName",
     )
-    mbqa.collect_training_data()
+    mbqa.collect_training_data_with_cqg()
     mbqa.train_model()
 ```
 Arguments for the `ContrastiveQuestionGeneration` (CQG) class:
@@ -229,9 +229,9 @@ cd mteb
 pip install .
 ```
 
-Then modify the `run-mteb-mbqa.py` file to specify the tasks you want to evaluate on, and make sure the `questions.json` and `mbqa_model.pt` files paths are correct for CQG-MBQA or QAEmb-MBQA. 
+Then modify the `run-mteb-cqg-mbqa.py` and `run-mteb-qaemb-mbqa.py` files to specify the tasks you want to evaluate on, and make sure the `questions.json` and `mbqa_model.pt` files paths are correct for CQG-MBQA or QAEmb-MBQA. 
 
-The results will be saved to the `results_mteb` folder.
+The results will be saved to the `results_mteb_cqg` and `results_mteb_qaemb` folders.
 
 #### NewSpectrum Dataset
 Due to copyright issues, please contact the authors for the dataset or crawl it yourself.

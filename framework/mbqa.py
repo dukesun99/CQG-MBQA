@@ -71,7 +71,7 @@ class MBQA:
         with open(os.path.join(self.temp_folder, "mbqa_progress.txt"), "r") as f:
             return int(f.read())
         
-    def collect_training_data(self):
+    def collect_training_data_with_cqg(self):
         with open(os.path.join(self.temp_folder, "deduped_questions.json"), "r") as f:
             deduped_questions = json.load(f)
             
@@ -356,7 +356,154 @@ class MBQA:
             logger.info(f"Final questions article pairs generated")
         
         logger.info(f"Finished collecting training data")
+    
+    def collect_training_data_with_qaemb(self):
+        with open(os.path.join(self.temp_folder, "deduped_questions.json"), "r") as f:
+            deduped_questions = json.load(f)
         
+        corpus = self.corpus
+        
+        if self._get_progress() < StepMBQA.REQUEST_JSON_CREATED.value:
+            docs_to_question_ids = {}
+            selected_docs_for_training = random.sample(list(range(len(corpus))), len(deduped_questions) * 50)
+            for i in range(len(selected_docs_for_training)):
+                # randomly select a doc
+                random_doc_index = selected_docs_for_training[i]
+                # sample 20 questions
+                questions_ids = random.sample(list(range(len(deduped_questions))), 20)
+                docs_to_question_ids[random_doc_index] = questions_ids
+            
+            docs_to_question_ids_int = {int(k): [int(vi) for vi in v] for k, v in docs_to_question_ids.items()}
+            with open(os.path.join(self.temp_folder, "docs_to_question_ids.json"), "w") as f:
+                json.dump(docs_to_question_ids_int, f)
+                
+            with open(os.path.join(self.temp_folder, "docs_to_question_ids.json"), "r") as f:
+                docs_to_question_ids = json.load(f)
+            
+            batch_jsons_get_training_data = []
+            
+            for doc_index in docs_to_question_ids:
+                doc_text = corpus[int(doc_index)][:10000]
+
+                questions_ids_for_doc = docs_to_question_ids[doc_index]
+                
+                questions_texts = [deduped_questions[q_id] for q_id in questions_ids_for_doc]
+                assert len(questions_texts) == 20
+                
+                batch_size = 20
+                
+                for i in range(0, len(questions_texts), batch_size):
+                    batch = questions_texts[i:i+batch_size]
+                    prompt = format_qa_prompt(doc_text, batch)
+                    req_obj = {
+                            "custom_id": f"{doc_index}_{i}",
+                            "method": "POST",
+                            "url": "/v1/chat/completions",
+                            "body": {
+                                "model": self.LLM,
+                                "messages": [{"role": "system", "content": prompt}]
+                            }
+                        }
+                    batch_jsons_get_training_data.append(req_obj)
+                
+            logger.info(f"Number of requests to get training data: {len(batch_jsons_get_training_data)}")
+            
+            MAX_BATCH_SIZE = 40000
+            
+            for i in range(0, len(batch_jsons_get_training_data), MAX_BATCH_SIZE):
+                batch = batch_jsons_get_training_data[i:i+MAX_BATCH_SIZE]
+                with open(os.path.join(self.temp_folder, f"batch_jsons_get_training_data_{i}.json"), "w") as f:
+                    for req in batch:
+                        json.dump(req, f)
+                        f.write("\n")
+                        
+            self._log_progress(StepMBQA.REQUEST_JSON_CREATED.value)
+            logger.info(f"Requests to get training data prepared")
+        
+        if self._get_progress() < StepMBQA.REQUEST_SENT.value:
+            # 2. call the batch API
+            logger.info("Calling the batch API to get training data...")
+            
+            json_files = os.listdir(self.temp_folder)
+            json_files = [f for f in json_files if f.startswith("batch_jsons_get_training_data_")]
+            json_files = [os.path.join(self.temp_folder, f) for f in json_files]
+            
+            call_batch_api(self.client, json_files, os.path.join(self.temp_folder, "batch_ids_get_training_data.json"))
+            
+            self._log_progress(StepMBQA.REQUEST_SENT.value)
+            logger.info(f"Requests to get training data sent")
+            
+        if self._get_progress() < StepMBQA.REQUEST_COMPLETED.value:
+            # 3. wait for the batch API to complete
+            logger.info("Waiting for the batch API to complete...")
+            
+            with open(os.path.join(self.temp_folder, "batch_ids_get_training_data.json"), "r") as f:
+                batch_ids = json.load(f)
+            
+            wait_for_batch_api_completion(self.client, batch_ids)
+            
+            self._log_progress(StepMBQA.REQUEST_COMPLETED.value)
+            logger.info(f"Requests to get training data completed")
+            
+        if self._get_progress() < StepMBQA.RESULTS_RETRIEVED.value:
+            # 4. retrieve the results
+            logger.info("Retrieving the results...")
+            
+            with open(os.path.join(self.temp_folder, "batch_ids_get_training_data.json"), "r") as f:
+                batch_ids = json.load(f)
+            
+            for batch_id in batch_ids:
+                batch = self.client.batches.retrieve(batch_id)
+                batch_output_file_id = batch.output_file_id
+                
+                with open(os.path.join(self.temp_folder, f"batch_results_get_training_data_{batch_id}.json"), "wb") as f:
+                    f.write(self.client.files.content(batch_output_file_id).content)
+                    
+            self._log_progress(StepMBQA.RESULTS_RETRIEVED.value)
+            logger.info(f"Results retrieved")
+            
+        if self._get_progress() < StepMBQA.FINAL_QUESTIONS_ARTICLE_PAIRS_GENERATED.value:
+            # 5. generate final questions article pairs
+            logger.info("Generating final questions article pairs...")
+            
+            with open(os.path.join(self.temp_folder, "docs_to_question_ids.json"), "r") as f:
+                docs_to_question_ids = json.load(f)
+                
+            with open(os.path.join(self.temp_folder, "deduped_questions.json"), "r") as f:
+                deduped_questions = json.load(f)
+                
+            result_files = os.listdir(self.temp_folder)
+            result_files = [f for f in result_files if f.startswith("batch_results_get_training_data_")]
+            
+            training_data = {}
+            for response_file in result_files:
+                for line in open(os.path.join(self.temp_folder, response_file), "r"):
+                    response = json.loads(line)
+                    custom_id = response["custom_id"]
+                    doc_index, start_ind = custom_id.split("_")
+                    doc_index = doc_index
+                    start_ind = start_ind
+                    
+                    req_answers = parse_response(response["response"]["body"]["choices"][0]["message"]["content"])
+                    if len(req_answers) + start_ind > len(docs_to_question_ids[doc_index]):
+                        logger.warning(f"Warning: in file {response_file} and id {custom_id}, number of answers not equal to number of questions. This error is handled but you should not see a lot of it.")
+                        continue
+                    if doc_index not in training_data:
+                        training_data[doc_index] = {}
+
+                    for i in range(len(req_answers)):
+                        training_data[doc_index][docs_to_question_ids[doc_index][start_ind + i]] = req_answers[i]
+            
+            with open(os.path.join(self.temp_folder, "training_data.json"), "w") as f:
+                json.dump(training_data, f)
+            with open(os.path.join(self.output_folder, "questions.json"), "w") as f:
+                json.dump(deduped_questions, f)
+            
+            self._log_progress(StepMBQA.FINAL_QUESTIONS_ARTICLE_PAIRS_GENERATED.value)
+            logger.info(f"Final questions article pairs generated")
+        
+        logger.info(f"Finished collecting training data")
+    
     def train_model(self):
         logger.info(f"Start training model...")
         with open(os.path.join(self.temp_folder, "training_data.json"), "r") as f:
