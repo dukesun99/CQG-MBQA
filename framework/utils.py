@@ -4,6 +4,8 @@ import time
 from openai import OpenAI
 import logging
 import os
+from transformers import AutoTokenizer
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -102,4 +104,15 @@ class OpenAIWrapper:
                 raise e
         return cls._instance
     
-    
+class BagOfTokenEncoder:
+    def __init__(self, tokenizer="bert-base-uncased"):
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
+        
+    def encode(self, sentences: list[str], **kwargs) -> np.ndarray:
+        input_ids = self.tokenizer(sentences, add_special_tokens=False, padding=False, truncation=True, return_tensors="np")['input_ids']
+        total_dims = self.tokenizer.vocab_size
+        output = np.zeros((len(sentences), total_dims))
+        for i in range(len(sentences)):
+            unique, counts = np.unique(input_ids[i], return_counts=True)
+            output[i, unique] = counts
+        return output

@@ -5,3 +5,5 @@ sentence-transformers
 openai
 scipy
 scikit-learn-intelex
+beir
+bm25s

@@ -6,6 +6,10 @@
 - Sufficient OpenAI API credits
 - GPU with CUDA support for faster encoding and training (recommended, but optional)
 
+## Usages
+1. To reproduce the results from our paper, please run the experiments with our checkpoints (or train the model with our hyperparameters settings).
+2. To run the pipeline on your own dataset, please refer to the instructions below. We provide an example using the MEDI2 dataset. But you can use any other dataset that suits your task.
+
 ## Setup
 
 ### Create and Activate Conda Environment
@@ -17,16 +21,22 @@ pip install -r requirements.txt
 Ensure `OPENAI_API_KEY` is set in your environment variables before proceeding.
 
 ## Running the Pipeline with Default Configurations
-
+If you want to use the MEDI2 dataset, please follow the instructions below. Otherwise, you can use your own dataset. We recommend using the MEDI2 dataset for general text embedding settings. If you want to apply to your own domain, please refer to the instructions below to train the model with your dataset.
 ### MEDI2 Dataset
-The MEDI2 dataset is available on [Hugging Face](https://huggingface.co/datasets/GritLM/MEDI2/tree/main).
+The MEDI2 dataset is available on [Hugging Face](https://huggingface.co/datasets/GritLM/MEDI2).
 
 To use the dataset:
-1. Clone the repository
-2. Pull LFS files
-3. Run the preprocessing steps
-
-Or just access the preprocessed JSON data at `data/medi2_documents.json`
+1. Clone the MEDI2 repository and pull LFS files
+```bash
+cd data
+git lfs install
+git clone https://huggingface.co/datasets/GritLM/MEDI2
+```
+2. Run the preprocessing steps
+```bash
+cd ..
+python framework/preprocess-medi2.py
+```
 
 ### Execute the Pipeline
 ```bash
@@ -82,3 +92,5 @@ Tip: Start by setting `k` based on your document count. A good MBQA model typica
 
 The model functions similarly to a sentence-transformer model, utilizing the `encode` method for embeddings.
 
+### NewSpectrum Dataset
+Due to copyright issues, please contact the authors for the dataset.

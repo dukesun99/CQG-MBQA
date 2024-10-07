@@ -4,6 +4,7 @@ import torch
 import os
 import mteb
 
+# tasks used in the paper
 # tasks = [
 #     # STS tasks
 #     mteb.get_task("SICK-R", languages = ["eng"]),
