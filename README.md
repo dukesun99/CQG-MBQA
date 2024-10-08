@@ -16,7 +16,7 @@ Our framework allows you to create general domain or task-specific customized in
 - [Creating Customized Embeddings Using Your Dataset](#creating-customized-embeddings-using-your-dataset)
 - [Using Pretrained Model Checkpoints](#using-pretrained-model-checkpoints)
 - [Reproducing Results in Our Paper](#reproducing-results-in-our-paper)
-- [Evaluation on MTEB Benchmark](#evaluation-on-mteb-benchmark)
+<!-- - [Evaluation on MTEB Benchmark](#evaluation-on-mteb-benchmark) -->
 - [Bugs and Issues](#bugs-and-issues)
 - [Citation](#citation)
 
@@ -28,49 +28,20 @@ Our framework allows you to create general domain or task-specific customized in
 - **GPU**: A GPU with CUDA support with at least 6GB VRAM for faster encoding and training is highly recommended, but optional. 
 
 ### Setup
-Clone our repository and install the dependencies. Repository URL hidden for anonymity. Note this also downloads the LFS files (model checkpoints) automatically so please be patient.
+Clone our repository and install the dependencies. Repository URL hidden for anonymity. Note this also downloads the LFS files (model checkpoints) automatically so please be patient. 
 ```bash
 git clone <repository_url>
 cd CQG-MBQA
 ```
+> 🔔 As you are viewing an Anonymous GitHub, `git clone` may not work. Please download the repository as a zip file and unzip it, and pull the LFS files manually.
 
-
+> 💡 If you have not set up your OpenAI API key, please do so before proceeding. See [Setup OpenAI API Key](docs/setup_openai.md) for instructions.
 #### Anaconda Environment
 First, we need to create and activate a conda environment.
 ```bash
 conda create -n cqgmbqa python=3.9
 conda activate cqgmbqa
 pip install -r requirements.txt
-```
-
-#### OpenAI API Key
-Next, ensure `OPENAI_API_KEY` is set in your environment variables before proceeding. 
-
-##### **For Windows Users:**
-```cmd
-setx OPENAI_API_KEY <your_openai_api_key>
-```
-To check if the key is set, run:
-```cmd
-echo %OPENAI_API_KEY%
-```
-
-##### **For Linux and MacOS Users:**
-Using a text editor of your choice (`nano` in this example), open the `.bashrc` file in your home directory:
-```bash
-nano ~/.bashrc
-```
-Add the following line:
-```bash
-export OPENAI_API_KEY=<your_openai_api_key>
-```
-Save the file and exit the editor. Apply the changes with:
-```bash
-source ~/.bashrc
-```
-To check if the key is set, run:
-```bash
-echo $OPENAI_API_KEY
 ```
 
 🏆 Great! You're all set to go. 
@@ -137,7 +108,8 @@ For more details on the CQG and MBQA pipeline, please refer to the [CQG](docs/CQ
 🏆 Fantastic! You have successfully trained your own CQG-MBQA model checkpoint. Now let's proceed to use the model for inference in section [Using Pretrained Model Checkpoints](#using-pretrained-model-checkpoints).
 
 ## Using Pretrained Model Checkpoints
-We provide the pre-trained model used in our experiments in the `checkpoints` folder. You can use the model to perform inference. To find the embedding quality of our pretrained model in various domains, we evaluate it on the [MTEB benchmark](https://huggingface.co/blog/mteb). The results are given in the [Evaluation on MTEB Benchmark](#evaluation-on-mteb-benchmark) section.
+We provide the pre-trained model used in our experiments in the `checkpoints` folder. You can use the model to perform inference. To find the embedding quality of our pretrained model in various domains, we evaluate it on the [MTEB benchmark](https://huggingface.co/blog/mteb). 
+<!-- The results are given in the [Evaluation on MTEB Benchmark](#evaluation-on-mteb-benchmark) section. -->
 
 > 💡 If you have run through the [Creating Customized Embeddings Using Your Dataset](#creating-customized-embeddings-using-your-dataset) section, you should have a trained model checkpoint `mbqa_model.pt` and the generated questions `questions.json` similar to the ones in the `checkpoints/CQG-MBQA` folder. You may substitute the pre-trained model with your trained model in the following steps.
 
