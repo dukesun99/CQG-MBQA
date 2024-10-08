@@ -20,7 +20,6 @@ if __name__ == "__main__":
         temp_folder="./temp",
         output_folder="./output",
         name="MEDI2-QAEmb",
-        num_generations=100
     )
     qaemb.generate_questions()
     

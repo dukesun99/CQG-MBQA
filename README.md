@@ -1,7 +1,7 @@
 # CQG-MBQA: A General Framework for Producing Interpretable Semantic Text Embeddings
-Welcome to the repository for our paper "A General Framework for Producing Interpretable Semantic Text Embeddings" (Under Review). 
+🎯 **Generate high-quality interpretable semantic text embeddings by creating and answering discriminative yes/no questions.** This is the repository for our paper "A General Framework for Producing Interpretable Semantic Text Embeddings" (Under Review). 
 
-Key Features:
+## 🌟 Key Features:
 - 😎 **Interpretable Semantic Text Embeddings**: High quality, highly interpretable semantic text embeddings.
 - 🛠️ **General Framework**: Fit for both general domain or task-specific customized interpretable text embeddings.
 - 🚀 **Easy to Use**: Clone the repo, install the dependencies, and run the scripts. Easy-peasy!

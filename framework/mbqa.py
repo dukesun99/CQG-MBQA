@@ -52,6 +52,8 @@ class MBQA:
         assert self.name is not None, "Name is required"
         self.temp_folder = os.path.join(self.temp_folder, self.name)
         self.output_folder = os.path.join(self.output_folder, self.name)
+        os.makedirs(self.temp_folder, exist_ok=True)
+        os.makedirs(self.output_folder, exist_ok=True)
         
         self.LLM = kwargs.get("LLM", "gpt-4o-mini")
         self.openai_api_key = kwargs.get("openai_api_key", None)
@@ -482,7 +484,7 @@ class MBQA:
                     custom_id = response["custom_id"]
                     doc_index, start_ind = custom_id.split("_")
                     doc_index = doc_index
-                    start_ind = start_ind
+                    start_ind = int(start_ind)
                     
                     req_answers = parse_response(response["response"]["body"]["choices"][0]["message"]["content"])
                     if len(req_answers) + start_ind > len(docs_to_question_ids[doc_index]):
