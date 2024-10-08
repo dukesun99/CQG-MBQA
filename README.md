@@ -16,7 +16,6 @@ Our framework allows you to create general domain or task-specific customized in
 - [Creating Customized Embeddings Using Your Dataset](#creating-customized-embeddings-using-your-dataset)
 - [Using Pretrained Model Checkpoints](#using-pretrained-model-checkpoints)
 - [Reproducing Results in Our Paper](#reproducing-results-in-our-paper)
-<!-- - [Evaluation on MTEB Benchmark](#evaluation-on-mteb-benchmark) -->
 - [Bugs and Issues](#bugs-and-issues)
 - [Citation](#citation)
 
