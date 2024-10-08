@@ -12,6 +12,7 @@ Our framework allows you to create general domain or task-specific customized in
 - For **task-specific embeddings** i.e. your downstream task involves a specific domain or a narrow distribution of topics which you have a corpus (unlabeled) similar to the distribution in the downstream task, you can train your own embeddings using your own dataset. The instructions are given in the [Creating Customized Embeddings Using Your Dataset](#creating-customized-embeddings-using-your-dataset) section.
 
 ## Quick Links
+> 🚧 Anchor links are broken on anonymous GitHub due to technical limitations. Sorry for the inconvenience!
 - [Installation](#installation)
 - [Creating Customized Embeddings Using Your Dataset](#creating-customized-embeddings-using-your-dataset)
 - [Using Pretrained Model Checkpoints](#using-pretrained-model-checkpoints)
