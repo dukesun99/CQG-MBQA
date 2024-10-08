@@ -227,7 +227,7 @@ To run the (subset) MS MARCO dataset, modify the `framework/msmarco.py` file to 
 The script runs the evaluation on the (subset) MS MARCO dataset for the models similar to the ones in the [NewSpectrum Dataset](#newspectrum-dataset) and saves the results to the `results/msmarco_scores.json` file.
 
 
-## Bugs and Issues
+<!-- ## Bugs and Issues
 We will make a public accessible non-anonymous repository for the framework soon. If you have any questions, please raise an issue in this repository after deanonymization. 
 
 ## Citation
@@ -242,4 +242,4 @@ If you find this repository useful for your research, please consider citing our
     url={https://openreview.net/forum?id=23uY3FpQxc},
     note={under review}
 }
-```
+``` -->
