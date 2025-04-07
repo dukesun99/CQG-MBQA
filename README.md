@@ -1,5 +1,5 @@
 # CQG-MBQA: A General Framework for Producing Interpretable Semantic Text Embeddings
-🎯 **Generate high-quality interpretable semantic text embeddings by creating and answering discriminative yes/no questions.** This is the repository for our paper "A General Framework for Producing Interpretable Semantic Text Embeddings" (Under Review). 
+🎯 **Generate high-quality interpretable semantic text embeddings by creating and answering discriminative yes/no questions.** This is the repository for our paper ["A General Framework for Producing Interpretable Semantic Text Embeddings"](https://openreview.net/pdf?id=23uY3FpQxc) (ICLR 2025). 
 
 ## 🌟 Key Features:
 - 😎 **Interpretable Semantic Text Embeddings**: High quality, highly interpretable semantic text embeddings.
@@ -227,19 +227,18 @@ To run the (subset) MS MARCO dataset, modify the `framework/msmarco.py` file to 
 The script runs the evaluation on the (subset) MS MARCO dataset for the models similar to the ones in the [NewSpectrum Dataset](#newspectrum-dataset) and saves the results to the `results/msmarco_scores.json` file.
 
 
-<!-- ## Bugs and Issues
-We will make a public accessible non-anonymous repository for the framework soon. If you have any questions, please raise an issue in this repository after deanonymization. 
+## Bugs and Issues
+If you have any questions, please raise an issue in this repository.
 
 ## Citation
 If you find this repository useful for your research, please consider citing our paper:
 ```bibtex
 @inproceedings{
-    anonymous2024a,
-    title={A General Framework for Producing Interpretable Semantic Text Embeddings},
-    author={Anonymous},
-    booktitle={Submitted to The Thirteenth International Conference on Learning Representations},
-    year={2024},
-    url={https://openreview.net/forum?id=23uY3FpQxc},
-    note={under review}
+sun2025a,
+title={A General Framework for Producing Interpretable Semantic Text Embeddings},
+author={Yiqun Sun and Qiang Huang and Yixuan Tang and Anthony Kum Hoe Tung and Jun Yu},
+booktitle={The Thirteenth International Conference on Learning Representations},
+year={2025},
+url={https://openreview.net/forum?id=23uY3FpQxc}
 }
-``` -->
+```
